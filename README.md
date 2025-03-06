@@ -43,4 +43,4 @@ https://github.com/user-attachments/assets/46dc57f7-8fa3-4af6-b64e-e9038f7064aa
 
 #### Связь
 
-[![Telegram](./assets/images/icon-tg.svg)](https://t.me/SvyatBgd)
+[![Telegram](./assets/images/icon-tg.svg)](https://t.me/SvyatBgdn)
