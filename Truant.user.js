@@ -1123,6 +1123,8 @@ color: var(--color-primary-dark);
           !JSON.parse(sessionStorage.getItem("skipped"))
         ) {
           startPeek();
+        } else {
+          checkUpdates()
         }
       }
       if (button.classList.contains("button-menu")) {
