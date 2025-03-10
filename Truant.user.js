@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Truant
 // @namespace    https://edu.rk.gov.ru/
-// @version      1.0.0
+// @version      1.0.1
 // @description  Counts the number of passes
 // @author       SvyaT_T
 // @match        https://edu.rk.gov.ru/*
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
   console.log("Restart!");
-  const currentVersion = "1.0.0";
+  const currentVersion = "1.0.1";
 
   function checkUpdates() {
     const updateURL =
@@ -26,7 +26,7 @@
         const remoteVersionMatch = text.match(/@version\s+([\d.]+)/i);
         if (remoteVersionMatch) {
           const remoteVersion = remoteVersionMatch[1];
-          if (remoteVersion > currentVersion) {
+          if (remoteVersion != currentVersion) {
             showUpdateNotification(remoteVersion);
           }
         }
@@ -47,8 +47,15 @@
     }
   }
 
+  let startAttempts = +sessionStorage.getItem("startAttempts") || 0;
   let canStart = JSON.parse(sessionStorage.getItem("canStart")) || false;
   function startPeek() {
+    if (startAttempts >= 5) {
+      return false;
+    }
+    startAttempts++;
+    sessionStorage.setItem("startAttempts", startAttempts);
+
     canStart = sessionStorage.setItem("canStart", true);
     if (
       !JSON.parse(sessionStorage.getItem("holidays")) ||
@@ -543,6 +550,7 @@ color: var(--color-primary-dark);
 			.toggle {
 					display: block;
 					cursor: pointer;
+          pointer-events: none;
 			}
 
 			.toggle input {
@@ -1040,9 +1048,8 @@ color: var(--color-primary-dark);
         event.preventDefault();
         return;
       }
-      if (buttonLabel.classList.contains("toggle_close")) {
+      if (buttonInput.checked) {
         block.classList.add("block_open");
-
         if (currentTheme === "Prototype") {
           document
             .querySelectorAll(
@@ -1087,8 +1094,6 @@ color: var(--color-primary-dark);
           }
         }
         toggleColors();
-      }
-      if (buttonInput.checked) {
         buttonLabel.classList.add("toggle_close");
         const elements = iframeDoc.querySelectorAll(
           ".form, .lesson-skipped, .countdown, .weekday-countdown, .button-save, .entry-percent-wrapper, .author-link, .countdown-wrapper"
@@ -1124,7 +1129,7 @@ color: var(--color-primary-dark);
         ) {
           startPeek();
         } else {
-          checkUpdates()
+          checkUpdates();
         }
       }
       if (button.classList.contains("button-menu")) {
