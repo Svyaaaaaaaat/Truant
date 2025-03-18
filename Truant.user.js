@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Truant
 // @namespace    https://edu.rk.gov.ru/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Counts the number of passes
 // @author       SvyaT_T
 // @match        https://edu.rk.gov.ru/*
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
   console.log("Restart!");
-  const currentVersion = "1.0.1";
+  const currentVersion = "1.0.2";
 
   function checkUpdates() {
     const updateURL =
@@ -1934,7 +1934,7 @@ color: var(--color-primary-dark);
         weekSegments.join(", ") || "";
 
       iframeDoc.querySelector(".weekday-countdown span").textContent =
-        weekdayCounter;
+        weekdayCounter += Object.values(addWeekday).reduce((a, b) => a - b, 0);
     }
 
     form.addEventListener("submit", function (event) {
