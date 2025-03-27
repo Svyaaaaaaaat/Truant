@@ -50,7 +50,6 @@
   let startAttempts = +sessionStorage.getItem("startAttempts") || 0;
   let canStart = JSON.parse(sessionStorage.getItem("canStart")) || false;
 
-
   function startPeek() {
     if (startAttempts >= 5) {
       return false;
@@ -58,12 +57,13 @@
     startAttempts++;
     sessionStorage.setItem("startAttempts", startAttempts);
     const savedPage = sessionStorage.getItem("savedPage");
-    let suffixMatch = sessionStorage.getItem("suffixMatch")
+    let suffixMatch = sessionStorage.getItem("suffixMatch");
     if (!suffixMatch && suffixMatch != "unknown") {
-        suffixMatch = savedPage.match(/u\.\d+$/);
-        
-          sessionStorage.setItem("suffixMatch", suffixMatch ? suffixMatch : "unknown")
-        
+      suffixMatch = savedPage.match(/u\.\d+$/);
+      sessionStorage.setItem(
+        "suffixMatch",
+        suffixMatch ? suffixMatch : "unknown"
+      );
     }
     console.log(suffixMatch);
 
@@ -74,75 +74,90 @@
       !JSON.parse(sessionStorage.getItem("skipped")) ||
       !JSON.parse(sessionStorage.getItem("grades"))
     ) {
-      if (!JSON.parse(sessionStorage.getItem("holidays")) || !JSON.parse(sessionStorage.getItem("schedule"))) {
       if (
-        window.location.href !== `https://edu.rk.gov.ru/journal-schedule-action${suffixMatch && suffixMatch != "unknown" ? `/class./${suffixMatch[0]}` : ""}`
+        !JSON.parse(sessionStorage.getItem("holidays")) ||
+        !JSON.parse(sessionStorage.getItem("schedule"))
       ) {
-        window.location.href = `https://edu.rk.gov.ru/journal-schedule-action${suffixMatch && suffixMatch != "unknown" ? `/class./${suffixMatch[0]}` : ""}`
-        
-      return
-      }
+        if (
+          window.location.href !==
+          `https://edu.rk.gov.ru/journal-schedule-action${
+            suffixMatch && suffixMatch != "unknown"
+              ? `/class./${suffixMatch[0]}`
+              : ""
+          }`
+        ) {
+          window.location.href = `https://edu.rk.gov.ru/journal-schedule-action${
+            suffixMatch && suffixMatch != "unknown"
+              ? `/class./${suffixMatch[0]}`
+              : ""
+          }`;
 
-      // Каникулы
-      const holidayItems = window.holidayItems;
-      const holidays = [];
+          return;
+        }
 
-      new DOMParser()
-        .parseFromString(holidayItems, "text/html")
-        .querySelectorAll(".list-mdash li")
-        .forEach((item) => {
-          const dates = item.textContent.match(/\d{2}\.\d{2}\.\d{4}/g);
-          holidays.push({
-            start: new Date(dates[0].split(".").reverse().join("-")),
-            end: dates[1]
-              ? new Date(dates[1].split(".").reverse().join("-"))
-              : null,
+        // Каникулы
+        const holidayItems = window.holidayItems;
+        const holidays = [];
+
+        new DOMParser()
+          .parseFromString(holidayItems, "text/html")
+          .querySelectorAll(".list-mdash li")
+          .forEach((item) => {
+            const dates = item.textContent.match(/\d{2}\.\d{2}\.\d{4}/g);
+            holidays.push({
+              start: new Date(dates[0].split(".").reverse().join("-")),
+              end: dates[1]
+                ? new Date(dates[1].split(".").reverse().join("-"))
+                : null,
+            });
           });
+
+        // Расписание
+        const schedule = {};
+
+        document.querySelectorAll(".schedule__day").forEach((dayElement) => {
+          const weekDay = dayElement
+            .querySelector(".schedule__day__content__header__dayweek")
+            ?.textContent.trim();
+          schedule[weekDay] = {};
+          dayElement
+            .querySelector(".schedule__day__content__column")
+            ?.querySelectorAll(".schedule__day__content__lesson--main")
+            ?.forEach((item) => {
+              const lessonElement = item
+                .querySelector(".schedule-lesson")
+                ?.cloneNode(true);
+              lessonElement.querySelector(".schedule-group")?.remove();
+              const lesson = lessonElement.textContent.trim();
+              schedule[weekDay][lesson] = (schedule[weekDay][lesson] || 0) + 1;
+            });
         });
 
-      // Расписание
-      const schedule = {};
+        delete schedule["Суббота"];
+        delete schedule["Воскресенье"];
 
-      document.querySelectorAll(".schedule__day").forEach((dayElement) => {
-        const weekDay = dayElement
-          .querySelector(".schedule__day__content__header__dayweek")
-          ?.textContent.trim();
-        schedule[weekDay] = {};
-        dayElement
-          .querySelector(".schedule__day__content__column")
-          ?.querySelectorAll(".schedule__day__content__lesson--main")
-          ?.forEach((item) => {
-            const lessonElement = item
-              .querySelector(".schedule-lesson")
-              ?.cloneNode(true);
-            lessonElement.querySelector(".schedule-group")?.remove();
-            const lesson = lessonElement.textContent.trim();
-            schedule[weekDay][lesson] = (schedule[weekDay][lesson] || 0) + 1;
-          });
-      });
-
-      delete schedule["Суббота"];
-      delete schedule["Воскресенье"];
-
-      sessionStorage.setItem(
-        "holidays",
-        holidays.length ? JSON.stringify(holidays) : null
-      );
-      sessionStorage.setItem(
-        "schedule",
-        Object.keys(schedule).length ? JSON.stringify(schedule) : null
-      );
-    }
+        sessionStorage.setItem(
+          "holidays",
+          holidays.length ? JSON.stringify(holidays) : null
+        );
+        sessionStorage.setItem(
+          "schedule",
+          Object.keys(schedule).length ? JSON.stringify(schedule) : null
+        );
+      }
 
       if (!JSON.parse(sessionStorage.getItem("skipped"))) {
         if (
           window.location.href !==
-          `https://edu.rk.gov.ru/journal-app/view.miss_report/${suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""}`
+          `https://edu.rk.gov.ru/journal-app/view.miss_report/${
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+          }`
         ) {
-          window.location.href =
-            `https://edu.rk.gov.ru/journal-app/view.miss_report/${suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""}`;
+          window.location.href = `https://edu.rk.gov.ru/journal-app/view.miss_report/${
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+          }`;
         }
-  
+
         // Прогулы
         const skipped = {};
         document.querySelectorAll('[xls="row"]')?.forEach((item) => {
@@ -152,7 +167,7 @@
             ?.textContent.trim();
           skipped[lesson] = +totalLessonsMissed || 0;
         });
-  
+
         sessionStorage.setItem(
           "skipped",
           Object.keys(skipped).length ? JSON.stringify(skipped) : null
@@ -161,34 +176,39 @@
       if (!JSON.parse(sessionStorage.getItem("grades"))) {
         if (
           window.location.href !==
-          `https://edu.rk.gov.ru/journal-student-grades-action/${suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""}`
+          `https://edu.rk.gov.ru/journal-student-grades-action/${
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+          }`
         ) {
-          window.location.href =
-            `https://edu.rk.gov.ru/journal-student-grades-action/${suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""}`;
+          window.location.href = `https://edu.rk.gov.ru/journal-student-grades-action/${
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+          }`;
         }
-  
+
         // Отметки
-        const cellsInRowName = document.querySelectorAll('[xls="hcolumn"] .cell');
+        const cellsInRowName = document.querySelectorAll(
+          '[xls="hcolumn"] .cell'
+        );
         const cellsName = Array.from(cellsInRowName).map((cell) =>
           cell.getAttribute("name")
         );
         const cells = document.querySelectorAll(".cell");
         const grades = {};
-  
+
         cellsName.forEach((name) => {
           grades[name] = [];
         });
-  
+
         cells.forEach((cell) => {
           const subjectName = cell.getAttribute("name");
           const cellData = cell.querySelector(".cell-data");
-  
+
           if (cellData && cellsName.includes(subjectName)) {
             const gradeParts = cellData.textContent.trim().split("/");
             const numericGrades = gradeParts
               .map((part) => parseFloat(part))
               .filter((num) => !isNaN(num));
-  
+
             if (numericGrades.length > 0) {
               grades[subjectName].push(...numericGrades);
             }
@@ -2392,22 +2412,22 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
         let important = false;
 
         if (requiredK >= requiredQuantity) {
-          console.log( Math.round(target));
-          
+          console.log(Math.round(target));
+
           possibleGrades.push({ grade: Math.round(target), count: requiredK });
-                  // Фильтрация и определение important
-        const validGrades = possibleGrades
-        .filter((g) => g.count <= remaining)
-        .sort((a, b) => a.count - b.count);
+          // Фильтрация и определение important
+          const validGrades = possibleGrades
+            .filter((g) => g.count <= remaining)
+            .sort((a, b) => a.count - b.count);
 
-      important = possibleGrades.some((g) => g.count > remaining);
+          important = possibleGrades.some((g) => g.count > remaining);
 
-      result[subject] = {
-        type: "possible",
-        grades: validGrades.length > 0 ? validGrades : possibleGrades,
-        ...(important ? { important: true } : {}),
-      };
-      continue;
+          result[subject] = {
+            type: "possible",
+            grades: validGrades.length > 0 ? validGrades : possibleGrades,
+            ...(important ? { important: true } : {}),
+          };
+          continue;
         }
 
         // Перебор возможных оценок от 5 до 2
