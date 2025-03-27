@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Truant
 // @namespace    https://edu.rk.gov.ru/
-// @version      1.0.2
+// @version      1.1.2
 // @description  Counts the number of passes
 // @author       SvyaT_T
 // @match        https://edu.rk.gov.ru/*
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
   console.log("Restart!");
-  const currentVersion = "1.0.2";
+  const currentVersion = "1.1.2";
 
   function checkUpdates() {
     const updateURL =
@@ -51,7 +51,7 @@
   let canStart = JSON.parse(sessionStorage.getItem("canStart")) || false;
 
   function startPeek() {
-    if (startAttempts >= 5) {
+    if (startAttempts >= 25) {
       return false;
     }
     startAttempts++;
@@ -65,7 +65,6 @@
         suffixMatch ? suffixMatch : "unknown"
       );
     }
-    console.log(suffixMatch);
 
     canStart = sessionStorage.setItem("canStart", true);
     if (
@@ -82,13 +81,13 @@
           window.location.href !==
           `https://edu.rk.gov.ru/journal-schedule-action${
             suffixMatch && suffixMatch != "unknown"
-              ? `/class./${suffixMatch[0]}`
+              ? `/class./${suffixMatch}`
               : ""
           }`
         ) {
           window.location.href = `https://edu.rk.gov.ru/journal-schedule-action${
             suffixMatch && suffixMatch != "unknown"
-              ? `/class./${suffixMatch[0]}`
+              ? `/class./${suffixMatch}`
               : ""
           }`;
 
@@ -150,11 +149,11 @@
         if (
           window.location.href !==
           `https://edu.rk.gov.ru/journal-app/view.miss_report/${
-            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch}` : ""
           }`
         ) {
           window.location.href = `https://edu.rk.gov.ru/journal-app/view.miss_report/${
-            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch}` : ""
           }`;
         }
 
@@ -177,11 +176,11 @@
         if (
           window.location.href !==
           `https://edu.rk.gov.ru/journal-student-grades-action/${
-            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch}` : ""
           }`
         ) {
           window.location.href = `https://edu.rk.gov.ru/journal-student-grades-action/${
-            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch[0]}` : ""
+            suffixMatch && suffixMatch != "unknown" ? `${suffixMatch}` : ""
           }`;
         }
 
@@ -2210,8 +2209,6 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
       let tomorrow = (new Date().getDay() + 1) % 7;
       let tomorrowName = dayNames[tomorrow];
 
-      console.log(totalLesson);
-
       for (let lesson in totalLesson) {
         remainingLessons[lesson] = 0;
       }
@@ -2261,11 +2258,10 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
       // console.log(schedule);
       // console.log(weekdayCounter);
       // console.log(skippingWeekday);
-      //console.log(remainingLessons);
+      // console.log(remainingLessons);
 
       const LessonSkippedList = iframeDoc.querySelector(".lesson-skipped");
       LessonSkippedList.innerHTML = "";
-      console.log("asasasas");
 
       const heading = document.createElement("h2");
       heading.textContent = "Уйти с уроков:";
@@ -2398,7 +2394,6 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
         const currentCount = subjectGrades.length;
         const remaining = remainingLessons[subject] || 0;
 
-        // Проверка выполнения требования
         if (currentCount >= requiredQuantity) {
           const currentAvg = currentSum / currentCount;
           if (currentAvg >= target) {
@@ -2412,10 +2407,7 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
         let important = false;
 
         if (requiredK >= requiredQuantity) {
-          console.log(Math.round(target));
-
           possibleGrades.push({ grade: Math.round(target), count: requiredK });
-          // Фильтрация и определение important
           const validGrades = possibleGrades
             .filter((g) => g.count <= remaining)
             .sort((a, b) => a.count - b.count);
@@ -2430,30 +2422,25 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
           continue;
         }
 
-        // Перебор возможных оценок от 5 до 2
         for (let grade = 5; grade >= 2; grade--) {
-          if (grade <= target) continue; // Оценка не может повысить средний
+          if (grade <= target) continue;
 
           let count;
           if (requiredK > 0) {
-            // Расчет для случая, когда нужно добавить оценки до requiredQuantity
             const sumAfterRequired = currentSum + grade * requiredK;
             const totalAfterRequired = currentCount + requiredK;
             const deficitAfterRequired =
               target * totalAfterRequired - sumAfterRequired;
 
             if (deficitAfterRequired <= 0) {
-              // Если после добавления requiredK оценок дефицит покрыт
               count = requiredK;
             } else {
-              // Нужны дополнительные оценки
               const additional = Math.ceil(
                 deficitAfterRequired / (grade - target)
               );
               count = requiredK + additional;
             }
           } else {
-            // Улучшение существующего среднего
             const deficit = target * currentCount - currentSum;
             count = Math.ceil(deficit / (grade - target));
           }
@@ -2466,7 +2453,6 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
           continue;
         }
 
-        // Фильтрация и определение important
         const validGrades = possibleGrades
           .filter((g) => g.count <= remaining)
           .sort((a, b) => a.count - b.count);
@@ -2520,7 +2506,6 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
       buttonNext.classList.toggle("button-prev");
       blockTwo.classList.toggle("block_two_active");
     });
-    console.log(remainingLessons);
 
     const increaseButton = iframeDoc.querySelector(".grades-general__increase");
     const decreaseButton = iframeDoc.querySelector(".grades-general__decrease");
@@ -2570,7 +2555,6 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
         grades,
         remainingLessons
       );
-      console.log(requiredGrades);
 
       gradesGeneralValue.textContent = formatValue(currentValue);
       gradesGeneralValue.classList.remove(
