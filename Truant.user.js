@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Truant
 // @namespace    https://edu.rk.gov.ru/
-// @version      1.1.2
+// @version      1.2.0
 // @description  Counts the number of passes
 // @author       SvyaT_T
 // @match        https://edu.rk.gov.ru/*
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
   console.log("Restart!");
-  const currentVersion = "1.1.2";
+  const currentVersion = "1.2.0";
 
   function checkUpdates() {
     const updateURL =
@@ -58,12 +58,22 @@
     sessionStorage.setItem("startAttempts", startAttempts);
     const savedPage = sessionStorage.getItem("savedPage");
     let suffixMatch = sessionStorage.getItem("suffixMatch");
+    let className = sessionStorage.getItem("className");
+
     if (!suffixMatch && suffixMatch != "unknown") {
       suffixMatch = savedPage.match(/u\.\d+$/);
       sessionStorage.setItem(
         "suffixMatch",
         suffixMatch ? suffixMatch : "unknown"
       );
+
+      const menuItem = document.querySelector(".menu0-item");
+      const href = menuItem.getAttribute("href");
+
+      const className = href.split("/")[2].replace("class.", "");
+      console.log(className);
+
+      sessionStorage.setItem("className", className);
     }
 
     canStart = sessionStorage.setItem("canStart", true);
@@ -78,16 +88,16 @@
         !JSON.parse(sessionStorage.getItem("schedule"))
       ) {
         if (
-          window.location.href !==
+          window.location.href !=
           `https://edu.rk.gov.ru/journal-schedule-action${
             suffixMatch && suffixMatch != "unknown"
-              ? `/class./${suffixMatch}`
+              ? `/class.${encodeURIComponent(className)}/${suffixMatch}`
               : ""
           }`
         ) {
           window.location.href = `https://edu.rk.gov.ru/journal-schedule-action${
             suffixMatch && suffixMatch != "unknown"
-              ? `/class./${suffixMatch}`
+              ? `/class.${className}/${suffixMatch}`
               : ""
           }`;
 
@@ -256,10 +266,33 @@
     skipped = { ...originalSkipped };
   }
 
+  const style = document.createElement("style");
+  style.innerHTML = `
+  @media (max-width: 1601px) {
+	iframe {
+		right: 55px !important;
+    bottom: 50px !important;
+	}
+}
+  @media (max-width: 1401px) {
+	iframe {
+		bottom: 50px !important;
+	}
+}
+  @media (max-width: 556px) {
+	iframe {
+		bottom: 40px !important;
+    right: 30px !important;
+	}
+}
+`;
+  document.head.appendChild(style);
+
   let isDarkMode =
     JSON.parse(localStorage.getItem("isDarkMode")) ??
     (window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+      window.matchMedia("(prefers-color-scheme: dark)").matches) ??
+    true;
   const iframe = document.createElement("iframe");
   document.body.appendChild(iframe);
 
@@ -267,7 +300,7 @@
   iframe.style.position = "fixed";
   iframe.style.zIndex = "9999";
   iframe.style.right = "140px";
-  iframe.style.bottom = "140px";
+  iframe.style.bottom = "80px";
   iframe.style.width = "60px";
   iframe.style.height = "60px";
   iframe.style.borderRadius = "50%";
@@ -522,8 +555,21 @@ color: var(--color-primary-dark);
 					display: flex;
 					align-items: end;
 					gap: 0 20px;
+          position: absolute;
+          z-index; -999;
 			}
-
+      .block__wrapper {
+      					display: flex;
+					gap: 0 30px;
+}
+.block__wrapper::-webkit-scrollbar, .grades-list::-webkit-scrollbar, .checkbox-list__wrapper::-webkit-scrollbar, .lesson-skipped__wrapper::-webkit-scrollbar {
+  display: none;
+}
+.block__wrapper, .grades-list, .checkbox-list__wrapper, .lesson-skipped__wrapper {
+    overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 			.block {
 					position: absolute;
 					z-index: 1;
@@ -592,17 +638,25 @@ color: var(--color-primary-dark);
 			}
 
 			.lesson-skipped {
-					white-space: nowrap;
 					display: flex;
 					flex-direction: column;
 					justify-content: end;
 					color: #fff;
 					margin-top: 25px;
+          max-width: 340.172px;
+          white-space: nowrap;
 			}
-
+          .lesson-skipped__item {
+          display: flex;
+          }
+      .lesson-skipped__name {
+    margin-right: 4px;
+    text-overflow: ellipsis;
+    display: inline-block;
+    overflow: hidden;
+      }
 			.lesson-skipped h2 {
 					font-size: 17px;
-					/* color: #fff; */
 					font-weight: bold;
 			}
 
@@ -832,15 +886,6 @@ color: var(--color-primary-dark);
 }
 .block_two_active {
 transform: translateX(0) !important;
-} 
-
-.grades-list {
-  overflow-y: scroll;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.grades-list::-webkit-scrollbar {
-  display: none;
 }
 
 .grades-general__button, .grades-general__button-wrapper {
@@ -922,7 +967,6 @@ flex: 1 0 100%;
 position: absolute;
 right: 0;
 top: -1px;
-
 }
 .grades-general__button-wrapper {
   position: relative;
@@ -951,6 +995,7 @@ height: 30px;
 }
 .grades-list-edit__item {
 position: relative;
+min-width: 265px;
 }
 .grade-count {
 transform: translateY(-3.5px);
@@ -960,52 +1005,114 @@ transform: translateY(-3.5px);
 transform: translateY(-2px);
     font-size: 12px;
     }
+.checkbox-list {
+      justify-content: end;
+    max-width: 315.438px;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-right: -10px;
+}
+.weekday-list {
+justify-content: end;
+}
+@media (max-width: 1331px) and (min-width: 200px) {
+	.checkbox-list {
+		order: 2;
+		margin-bottom: 20px;
+	}
+	.weekday-list {
+		order: 3;
+	}
+    .lesson-skipped {
+    margin-bottom: 20px;
+    margin-top: 5px;
+    }
+	.wrapper {
+		order: 4;
+	}
+  .block__wrapper {
+        flex-wrap: wrap;
+        max-width: 430px;
+        overflow-y: auto;
+    }
+    .author-link {
+    display: none;
+    }
+}
+    @media (max-width: 535px) and (min-width: 200px) {
+        .block__wrapper {
+            width: 360px;
+    }
+            .grades-general {
+                margin-right: 35px;
+            }
+            .weekday-list {
+            margin-bottom: 20px;
+            }
+    }
+    @media (max-width: 465px) and (min-width: 200px) {
+        .block__wrapper {
+            width: 340px;
+    }
+    }
+    @media (max-width: 451px) and (min-width: 200px) {
+        .block__wrapper {
+            width: 300px;
+    }
+    }
+    @media (max-width: 400px) and (min-width: 200px) {
+        .block__wrapper {
+            width: 280px;
+    }
+    }
 	</style>
 </head>
 
 <body class="${isDarkMode ? "dark" : "light"}">
-	<div class="block bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)]" style="background-color: rgb(0, 0, 0); border: none;">
+	<div id="block" class="block bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)]" style="background-color: rgb(0, 0, 0); border: none;">
 			<a class="author-link text-on-surface dark:text-on-surface-dark" style="position: absolute; z-index: -1; visibility: hidden";" target="_blank" href="https://t.me/SvyatBgdn">SvyatBgdn</a>
-			<form class="form" id="form" style="position: absolute; z-index: -1; visibility: hidden";">
-					<div class="checkbox-list flex flex-col gap-1">
-							<button class="checkbox-list__clear-all order-last mt-2 whitespace-nowrap w-full p-2 rounded-lg bg-transparent border border-primary text-primary text-sm font-semibold shadow-inner transition-colors hover:bg-primary/10 dark:border-primary-dark dark:text-primary-dark dark:hover:bg-primary-dark/10">очистить всё</button>
-					</div>
-					<div class="weekday-list flex flex-col gap-1">
-							<button class="weekday-list__clear-all order-last mt-3 whitespace-nowrap w-full p-2 rounded-lg bg-transparent border border-primary text-primary text-sm font-semibold shadow-inner transition-colors hover:bg-primary/10 dark:border-primary-dark dark:text-primary-dark dark:hover:bg-primary-dark/10">очистить всё</button>
-					</div>
-			</form>
-			<ul class="lesson-skipped" style="position: absolute; z-index: -1; visibility: hidden";">
-					<h2>Уйти с уроков</h2>
-			</ul>
-			<div class="wrapper">
-					<ul class="weekday-skipping flex flex-wrap gap-1">
+					<div class="block__wrapper">
+							<div class="checkbox-list flex flex-col gap-1" style="position: absolute; z-index: -1; visibility: hidden";">
+									<button class="checkbox-list__clear-all order-last mt-2 whitespace-nowrap w-full p-2 rounded-lg bg-transparent border border-primary text-primary text-sm font-semibold shadow-inner transition-colors hover:bg-primary/10 dark:border-primary-dark dark:text-primary-dark dark:hover:bg-primary-dark/10">очистить всё</button>
+							</div>
+							<div class="weekday-list flex flex-col gap-1" style="position: absolute; z-index: -1; visibility: hidden";">
+									<button class="weekday-list__clear-all order-last mt-3 whitespace-nowrap w-full p-2 rounded-lg bg-transparent border border-primary text-primary text-sm font-semibold shadow-inner transition-colors hover:bg-primary/10 dark:border-primary-dark dark:text-primary-dark dark:hover:bg-primary-dark/10">очистить всё</button>
+							</div>
+										<form class="form" id="form" style="position: absolute; z-index: -1; visibility: hidden";">
+					</form>
+					<ul class="lesson-skipped" style="position: absolute; z-index: -1; visibility: hidden";">
+							<h2>Уйти с уроков</h2>
 					</ul>
-					<div style="position: absolute; z-index: -1; visibility: hidden";" class="countdown-wrapper flex flex-col items-center gap-2 p-3 bg-surface-alt rounded-lg shadow-lg border border-outline dark:bg-surface-dark-alt dark:border-outline-dark">
-							<div class="countdown w-full p-2 rounded-lg bg-primary text-white text-center">
-									<p class="text-xs opacity-80"></p>
-									<p class="text-lg font-bold"></p>
-									<p class="text-xs"></p>
+					<div class="wrapper">
+							<ul class="weekday-skipping flex flex-wrap gap-1">
+							</ul>
+							<div style="position: absolute; z-index: -1; visibility: hidden";" class="countdown-wrapper flex flex-col items-center gap-2 p-3 bg-surface-alt rounded-lg shadow-lg border border-outline dark:bg-surface-dark-alt dark:border-outline-dark">
+									<div class="countdown w-full p-2 rounded-lg bg-primary text-white text-center">
+											<p class="text-xs opacity-80"></p>
+											<p class="text-lg font-bold"></p>
+											<p class="text-xs"></p>
+									</div>
+									<div class="weekday-countdown bg-primary text-white p-2 rounded-lg w-full text-sm text-center font-semibold shadow-inner border border-white/20">
+											Рабочих дней: <span class="font-bold"></span>
+									</div>
 							</div>
-							<div class="weekday-countdown bg-primary text-white p-2 rounded-lg w-full text-sm text-center font-semibold shadow-inner border border-white/20">
-									Рабочих дней: <span class="font-bold"></span>
+							<div style="position: absolute; z-index: -1; visibility: hidden";" class="entry-percent-wrapper flex flex-col items-center gap-1"><span class="pl-1 text-sm text-on-surface dark:text-on-surface-dark"></span>
+									<div class="flex items-center"><button type="button" class="entry-percent-decrease flex h-10 items-center justify-center rounded-tl-radius border border-outline bg-surface-alt px-4 py-2 text-on-surface hover:opacity-75 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:opacity-100 active:outline-offset-0 dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark dark:focus-visible:outline-primary-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="2" class="size-4">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"></path>
+													</svg></button><span class="entry-percent h-10 w-20 flex items-center justify-center border border-outline bg-surface-alt/50 text-on-surface-strong dark:border-outline-dark dark:bg-surface-dark-alt/50 dark:text-on-surface-dark-strong">50%</span><button type="button" class="entry-percent-increase flex h-10 items-center justify-center rounded-tr-radius border border-outline bg-surface-alt px-4 py-2 text-on-surface hover:opacity-75 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:opacity-100 active:outline-offset-0 dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark dark:focus-visible:outline-primary-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="2" class="size-4">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+													</svg></button></div>
 							</div>
+							<div style="position: absolute; z-index: -1; visibility: hidden";" class="entry-percent-wrapper flex items-center justify-center">
+									<kbd class="entry-percent-update inline-block flex-grow rounded-bl-radius whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">10%</kbd>
+									<kbd class="entry-percent-update inline-block flex-grow whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">20%</kbd>
+									<kbd class="entry-percent-update inline-block flex-grow whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">30%</kbd>
+									<kbd class="entry-percent-update inline-block flex-grow whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">40%</kbd>
+									<kbd class="entry-percent-update inline-block flex-grow rounded-br-radius whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">50%</kbd>
+							</div>
+							<button type="submit" form="form" style="position: absolute; z-index: -1; visibility: hidden";" class="button-save whitespace-nowrap mt-3 w-full p-2 rounded-lg bg-transparent border border-primary text-primary text-sm font-semibold shadow-inner transition-colors hover:bg-primary/10 dark:border-primary-dark dark:text-primary-dark dark:hover:bg-primary-dark/10">Сохранить</button>
 					</div>
-					<div style="position: absolute; z-index: -1; visibility: hidden";" class="entry-percent-wrapper flex flex-col items-center gap-1"><span class="pl-1 text-sm text-on-surface dark:text-on-surface-dark"></span>
-							<div class="flex items-center"><button type="button" class="entry-percent-decrease flex h-10 items-center justify-center rounded-tl-radius border border-outline bg-surface-alt px-4 py-2 text-on-surface hover:opacity-75 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:opacity-100 active:outline-offset-0 dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark dark:focus-visible:outline-primary-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="2" class="size-4">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"></path>
-											</svg></button><span class="entry-percent h-10 w-20 flex items-center justify-center border border-outline bg-surface-alt/50 text-on-surface-strong dark:border-outline-dark dark:bg-surface-dark-alt/50 dark:text-on-surface-dark-strong">50%</span><button type="button" class="entry-percent-increase flex h-10 items-center justify-center rounded-tr-radius border border-outline bg-surface-alt px-4 py-2 text-on-surface hover:opacity-75 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:opacity-100 active:outline-offset-0 dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark dark:focus-visible:outline-primary-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="2" class="size-4">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
-											</svg></button></div>
-					</div>
-					<div style="position: absolute; z-index: -1; visibility: hidden";" class="entry-percent-wrapper flex items-center justify-center">
-							<kbd class="entry-percent-update inline-block flex-grow rounded-bl-radius whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">10%</kbd>
-							<kbd class="entry-percent-update inline-block flex-grow whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">20%</kbd>
-							<kbd class="entry-percent-update inline-block flex-grow whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">30%</kbd>
-							<kbd class="entry-percent-update inline-block flex-grow whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">40%</kbd>
-							<kbd class="entry-percent-update inline-block flex-grow rounded-br-radius whitespace-nowrap border border-outline bg-surface-alt text-center py-1 font-mono text-xs font-semibold text-on-surface dark:border-outline-dark dark:bg-surface-dark-alt dark:text-on-surface-dark">50%</kbd>
-					</div>
-					<button type="submit" form="form" style="position: absolute; z-index: -1; visibility: hidden";" class="button-save whitespace-nowrap mt-3 w-full p-2 rounded-lg bg-transparent border border-primary text-primary text-sm font-semibold shadow-inner transition-colors hover:bg-primary/10 dark:border-primary-dark dark:text-primary-dark dark:hover:bg-primary-dark/10">Сохранить</button>
-			</div>
+</div>
 			<button class="button-close" type="button"><svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="21.33px" height="21.33px" viewBox="0 0 512.000000 512.000000" preserveAspectRatio="xMidYMid meet">
 							<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)" fill="#fff" stroke="none">
 									<path d="M1217 4086 c-154 -42 -232 -206 -168 -351 18 -41 120 -148 584 -612 l562 -563 -562 -562 c-614 -615 -606 -606 -606 -719 0 -141 111 -252 253 -252 112 0 104 -7 718 606 l562 562 563 -562 c614 -614 605 -606 718 -606 141 0 252 111 252 253 0 112 7 104 -606 718 l-562 562 562 563 c613 613 606 605 606 717 0 142 -111 253 -252 253 -113 0 -104 8 -718 -606 l-563 -562 -562 562 c-589 588 -594 593 -693 607 -22 3 -62 -1 -88 -8z" />
@@ -1052,8 +1159,8 @@ l429 -387 -1263 -5 -1262 -5 -40 -22 c-90 -48 -135 -123 -135 -223 0 -100 45
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
 					</svg>
 				</button>
-        
-        
+
+
         <div class="grades-general__button-wrapper">
         <button class="grades-general__edit grades-general__button">
       <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
@@ -1083,7 +1190,7 @@ l1513 3 70 24 c229 77 394 217 490 416 81 167 80 159 80 687 0 458 0 467 -21
 </g>
 </svg>
     </button>
-    
+
         <button class="grades-general__save grades-general__button">
       <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
  viewBox="0 0 512.000000 512.000000"
@@ -1207,6 +1314,10 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
       JSON.parse(sessionStorage.getItem("skipped")) &&
       JSON.parse(sessionStorage.getItem("grades"))
     ) {
+      const checkboxListContainer = document.createElement("div");
+      checkboxListContainer.className =
+        "checkbox-list__wrapper flex flex-col gap-1";
+      checkboxList.appendChild(checkboxListContainer);
       Object.keys(skipped)
         .sort((a, b) => a.length - b.length)
         .forEach((lesson) => {
@@ -1271,7 +1382,7 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
             label.appendChild(span);
             wrapper.appendChild(checkbox);
             wrapper.appendChild(svg);
-            checkboxList.appendChild(label);
+            checkboxListContainer.appendChild(label);
           }
         });
 
@@ -1451,7 +1562,7 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
         toggleColors();
         buttonLabel.classList.add("toggle_close");
         const elements = iframeDoc.querySelectorAll(
-          ".form, .lesson-skipped, .countdown, .weekday-countdown, .button-save, .entry-percent-wrapper, .author-link, .countdown-wrapper"
+          ".form, .checkbox-list, .weekday-list, .lesson-skipped, .countdown, .weekday-countdown, .button-save, .entry-percent-wrapper, .author-link, .countdown-wrapper"
         );
         elements.forEach((element) => {
           element.style.position = "";
@@ -1503,7 +1614,7 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
       }
       block.style.border = "none";
       const { width, height } = block.getBoundingClientRect();
-      if (width > 250 && height > 250) {
+      if (width > 1 && height > 1) {
         block.style.width = `${width}px`;
         block.style.height = `${height}px`;
       }
@@ -1518,7 +1629,7 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
       );
       // block.style.transition = `0.25s cubic-bezier(0.25, 1, 0.5, 1)`;
       const elements = iframeDoc.querySelectorAll(
-        ".form, .lesson-skipped, .countdown, .weekday-countdown, .button-save, .entry-percent-wrapper, .author-link, .countdown-wrapper"
+        ".form, .checkbox-list, .weekday-list, .lesson-skipped, .countdown, .weekday-countdown, .button-save, .entry-percent-wrapper, .author-link, .countdown-wrapper"
       );
       elements.forEach((element) => {
         element.style.position = "absolute";
@@ -1841,7 +1952,12 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
     applyTheme(currentTheme);
 
     const buttonThemeChange = iframeDoc.querySelector(".button-theme-change");
-    buttonThemeChange.addEventListener("click", () => {
+    buttonThemeChange.addEventListener("click", (event) => {
+      if (event.ctrlKey || event.metaKey) {
+        sessionStorage.clear();
+        location.reload();
+        return;
+      }
       buttonThemeChange.classList.remove("rotate");
       void buttonThemeChange.offsetWidth;
       buttonThemeChange.classList.add("rotate");
@@ -2262,11 +2378,14 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
 
       const LessonSkippedList = iframeDoc.querySelector(".lesson-skipped");
       LessonSkippedList.innerHTML = "";
+      const LessonSkippedContainer = document.createElement("div");
+      LessonSkippedContainer.className = "lesson-skipped__wrapper";
+      LessonSkippedList.appendChild(LessonSkippedContainer);
 
       const heading = document.createElement("h2");
       heading.textContent = "Уйти с уроков:";
       heading.className = "text-on-surface dark:text-on-surface-dark";
-      LessonSkippedList.appendChild(heading);
+      LessonSkippedContainer.appendChild(heading);
       const WeekdaySkippedList = iframeDoc.querySelector(".weekday-skipping");
       WeekdaySkippedList.innerHTML = "";
 
@@ -2277,9 +2396,21 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
           if (value != 0) {
             hasLessons = true;
             const listItem = document.createElement("li");
-            listItem.className = "text-on-surface dark:text-on-surface-dark";
-            listItem.textContent = `${lesson}: ${value}`;
-            LessonSkippedList.appendChild(listItem);
+            listItem.className =
+              "lesson-skipped__item text-on-surface dark:text-on-surface-dark";
+
+            const lessonName = document.createElement("span");
+            lessonName.className = "lesson-skipped__name";
+            lessonName.textContent = lesson;
+
+            const lessonValue = document.createElement("span");
+            lessonValue.className = "lesson-skipped__value";
+            lessonValue.textContent = value;
+
+            listItem.appendChild(lessonName);
+            listItem.appendChild(lessonValue);
+
+            LessonSkippedContainer.appendChild(listItem);
           }
         });
 
@@ -2825,12 +2956,13 @@ c67 38 103 96 108 174 5 71 -14 120 -65 168 -62 59 -47 58 -700 57 -329 -1
           const resetButton = document.createElement("button");
           resetButton.className =
             "grades-general__reset-button dark:text-on-surface-dark";
+          resetButton.style.color = "var(--color-primary)";
 
           resetButton.innerHTML = `
           <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
    viewBox="0 0 512.000000 512.000000"
    preserveAspectRatio="xMidYMid meet">
-  
+
   <g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
   fill="currentColor" stroke="none">
   <path d="M2320 5109 c-487 -46 -966 -239 -1344 -538 -183 -146 -397 -368 -417
